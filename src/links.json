@@ -1,0 +1,36 @@
+{
+    "football":[
+        {
+        "links": [
+        "https://www.flashscore.pl/pilka-nozna/anglia/premier-league",
+        "https://www.flashscore.pl/pilka-nozna/hiszpania/laliga",
+        "https://www.flashscore.pl/pilka-nozna/niemcy/bundesliga", 
+        "https://www.flashscore.pl/pilka-nozna/wlochy/serie-a",
+        "https://www.flashscore.pl/pilka-nozna/francja/ligue-1",
+        "https://www.flashscore.pl/pilka-nozna/holandia/eredivisie",
+        "https://www.flashscore.pl/pilka-nozna/portugalia/primeira-liga",
+        "https://www.flashscore.pl/pilka-nozna/belgia/jupiler-pro-league",
+        "https://www.flashscore.pl/pilka-nozna/szkocja/premiership",
+        "https://www.flashscore.pl/pilka-nozna/turcja/super-lig",
+        "https://www.flashscore.pl/pilka-nozna/austria/bundesliga",
+        "https://www.flashscore.pl/pilka-nozna/szwajcaria/super-league",
+        "https://www.flashscore.pl/pilka-nozna/rosja/premier-league",
+        "https://www.flashscore.pl/pilka-nozna/polska/ekstraklasa"
+        ]
+        }
+    ],
+
+    "basketball": [
+        "https://www.flashscore.pl/koszykowka/usa/nba/",
+        "https://www.flashscore.pl/koszykowka/francja/lnb/",
+        "https://www.flashscore.pl/koszykowka/niemcy/bbl/",
+        "https://www.flashscore.pl/koszykowka/hiszpania/acb/",
+        "https://www.flashscore.pl/koszykowka/wlochy/lega-a/",
+        "https://www.flashscore.pl/koszykowka/grecja/basket-league/",
+        "https://www.flashscore.pl/koszykowka/turcja/super-ligi/",
+        "https://www.flashscore.pl/koszykowka/rosja/puchar-vtb-promo/",
+        "https://www.flashscore.pl/koszykowka/australia/nbl/",
+        "https://www.flashscore.pl/koszykowka/argentyna/liga-a/"
+    ]
+
+}
