@@ -1,23 +1,13 @@
-# TODO
-Make professional readme, not a draft like now (because this part is being submitted as a project for a class/course)
-Feature Engineering:
-- Add average statistics from the previous 1, 3, and 5 matches to enrich the dataset with recent form indicators.
+# Introduction
 
-Data Selection:
-- Improve data filtering and selection to ensure the quality and relevance of input features for the model.
+The project focuses on developing a model for sports betting decision-making. It begins with data acquisition (web scraping), followed by data processing and preparation for model building. A Decision Tree (DT) model was selected due to its explainability and the ability to clearly understand the decision-making process.
 
-Model Approach Update:
-- Change the current model evaluation method from accuracy-based to a more realistic scenario.
-- Instead of static train-test splits, implement a framework where the model trains on historical data and predicts future matches sequentially.
-- This would allow incremental training as new data becomes available and more accurate forecasting.
+At the current stage, the project is nearing completion. The remaining work includes improving feature selection for the Decision Tree, refining the model itself, and evaluating its performance in a realistic setting. This involves running several hundred trials on an unseen dataset, while also accounting for practical factors such as the number of bets per ticket and applicable taxes.
 
-Expand Time Series Models:
-- Develop the existing time series model prototypes further.
-- Implement advanced models such as LSTM (Long Short-Term Memory networks) to better capture temporal dependencies and improve predictions.
+Finally, once all of the above steps are completed, a thorough review will be required to further refine and polish the project, ensuring it is presented in the clearest and most understandable form possible.
 
-Betting Strategy Finalization:
-- Add a comprehensive chapter on finalizing the betting system — from selecting the best matches to place bets on, to evaluating the profitability and risk of the betting slips.
-- This should include methodology, metrics, and practical considerations for real-world application.
+PS. Latest part of the project is partially written in polish - will be fixed
+
 
 # Project Overview
 
