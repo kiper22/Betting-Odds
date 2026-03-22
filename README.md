@@ -8,6 +8,8 @@ Finally, once all of the above steps are completed, a thorough review will be re
 
 PS. Latest part of the project is partially written in polish - will be fixed
 
+**Main file (analysys) is in SRC folder**
+
 
 # Project Overview
 
