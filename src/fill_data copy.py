@@ -1,16 +1,15 @@
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from unidecode import unidecode
 import time
 import os
 import pandas as pd
 import logging
-
-# w column mapping do uzupełnienia danych sprawdź jeszcze raz i wprowaadzić alternatywy m.in.
-# 'Ataki': 'attacks', na 'Strzały łącznie'
-# chyba te nazwy pozamieniali całkowicie
 
 
 def setup_logger(discipline, season):
@@ -30,19 +29,31 @@ def setup_logger(discipline, season):
 
 def get_soup(driver, url):
     driver.get(url)
-    time.sleep(1.7)
-    page_source = driver.page_source
-    soup = BeautifulSoup(page_source, 'html.parser')
-    return soup
+    try:
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+    except:
+        pass
+
+    return BeautifulSoup(driver.page_source, 'html.parser')
+
+def merge_into_df(df, idx, *dicts):
+    for d in dicts:
+        if d:
+            for k, v in d.items():
+                df.loc[idx, k] = v
 
 # Exception 1 - header
 def fill_headline(soup) -> dict: # change creating/filling ids col and row
-    dictionary = dict()
-    date = soup.find('div', class_='duelParticipant__startTime').find('div', class_='').text.strip()
+    dictionary = dict()    
+    date_div = soup.find('div', class_='duelParticipant__startTime')
+    date = date_div.get_text(strip=True) if date_div else None
     
     dictionary['date'] = date # date
     
     span_country = soup.find('span', class_='tournamentHeader__country')
+    if not span_country:
+        return {}
+
     league_text = span_country.text.strip()      # league
     league_name = league_text.split(':')[-1].strip()
     league = league_name.split('-')[0]
@@ -154,7 +165,7 @@ def fill_team_ratings(team_section, team_number) -> dict:
     
     if not team_section:
         print(f"Brak danych dla team_{team_number}")
-        return
+        return {}
     
     team_lines = team_section.find_all('div', class_='lf__line')
 
@@ -162,8 +173,12 @@ def fill_team_ratings(team_section, team_number) -> dict:
         players_ratings = []
 
         for player in line.find_all('div', class_='lf__player'):
-            rating_element = rating_element.find('span', {'data-testid': ['wcl-scores-caption-03', 'wcl-scores-caption1']}).text.strip()
-            players_ratings.append(rating_element)
+            rating_element = player.find('span', {'data-testid': ['wcl-scores-caption-03', 'wcl-scores-caption1']})
+
+            if rating_element:
+                players_ratings.append(rating_element.text.strip())
+            else:
+                players_ratings.append(None)
         
         dictionary[f'team_{team_number}_line_{i}'] = "-".join(str(x) for x in players_ratings)
     
@@ -176,15 +191,19 @@ def bets_1(soup, col_names) -> dict:
     dictionary = dict()
     bookmaker_rows = soup.find_all('div', class_='ui-table__row')
     for row in bookmaker_rows:
-        bookmaker_name = row.find('a', class_='prematchLink').get('title')
+        link = row.find('a', class_='prematchLink')
+        if not link:
+            continue
+
+        bookmaker_name = link.get('title', '')
 
         if 'eFortuna.pl' in bookmaker_name:
             odds = row.find_all('a', class_=['oddsCell__odd', 'oddsCell__noOddsCell'])
             
             if odds and len(odds) == 3: # >= było
-                diction[col_names[0]] = odds[0].text.strip()
-                diction[col_names[1]] = odds[1].text.strip()
-                diction[col_names[2]] = odds[2].text.strip()
+                dictionary[col_names[0]] = odds[0].text.strip()
+                dictionary[col_names[1]] = odds[1].text.strip()
+                dictionary[col_names[2]] = odds[2].text.strip()
     
     return dictionary    
 
@@ -268,9 +287,9 @@ for file_name in os.listdir(directory):
 
     logger = setup_logger(discipline, season)
     
-    for id in ids:
+    for match_id in ids:
         if len(df[df['match_id'] == id]) == 1:
-            logger.warning(f"WARNING: match id had repeat: {id}")
+            logger.warning(f"WARNING: match id had repeat: {match_id}")
             continue
         print(id)
         # else:
@@ -281,80 +300,85 @@ for file_name in os.listdir(directory):
         # df.loc[_idx, 'match_id'] = id
         
         _idx = len(df)
-        df.loc[_idx] = {'id': _idx, 'match_id': id}
+        df.loc[_idx] = {'id': _idx, 'match_id': match_id}
         
 
         
-        url = f'https://www.flashscore.pl/mecz/{id}/#/szczegoly-meczu/statystyki-meczu/0'
+        url = f'https://www.flashscore.pl/mecz/{match_id}/#/szczegoly-meczu/statystyki-meczu/0'
         try:
             soup = get_soup(driver, url)
             dict1 = fill_headline(soup)
             dict2 = extract_stats(soup)
+            merge_into_df(df, _idx, dict1, dict2)
         except:
-            logger.exception(f"Exception_0 occured when filling match stats for id: {id};{url}")
+            logger.exception(f"Exception_0 occured when filling match stats for id: {match_id};{url}")
             continue        # if cant extract most important data skip this match
             
             
         # Approach 3
-        url = f'https://www.flashscore.pl/mecz/{id}/#/szczegoly-meczu/sklady'
+        url = f'https://www.flashscore.pl/mecz/{match_id}/#/szczegoly-meczu/sklady'
         
         try:
             soup = get_soup(driver, url)
 
-            team_squats(soup)
+            dict_form = team_squats(soup)
+            merge_into_df(df, _idx, dict_form)
 
             home_team_section = soup.find('div', class_='lf__formation')
             away_team_section = soup.find('div', class_='lf__formation lf__formationAway')
 
-            diction = fill_team_ratings(home_team_section, 1)
-            diction = fill_team_ratings(away_team_section, 2)
+            dict_h = fill_team_ratings(home_team_section, 1)
+            dict_a = fill_team_ratings(away_team_section, 2)
+            merge_into_df(df, _idx, dict_h, dict_a)
 
         except:
-            logger.exception(f"Exception_1 occured when filling match teams for id: {id};{url}")
+            logger.exception(f"Exception_1 occured when filling match teams for id: {match_id};{url}")
 
         
-        url = f'https://www.flashscore.pl/mecz/{id}/#/zestawienie-kursow/kursy-1x2/koniec-meczu'
+        url = f'https://www.flashscore.pl/mecz/{match_id}/#/zestawienie-kursow/kursy-1x2/koniec-meczu'
         try:
             soup = get_soup(driver, url)
-            bets_1(soup, ['bet_1', 'bet_x', 'bet_2'])
+            dict_bets = bets_1(soup, ['bet_1', 'bet_x', 'bet_2'])
+            merge_into_df(df, _idx, dict_bets)
         except:
-            logger.exception(f"Exception_2 occured when filling match bets 1x2 for id: {id};{url}")
+            logger.exception(f"Exception_2 occured when filling match bets 1x2 for id: {match_id};{url}")
 
 
-        url = f'https://www.flashscore.pl/mecz/{id}/#/zestawienie-kursow/podwojna-szansa/koniec-meczu'
+        url = f'https://www.flashscore.pl/mecz/{match_id}/#/zestawienie-kursow/podwojna-szansa/koniec-meczu'
         try:
             soup = get_soup(driver, url)
-            # bets_2
-            bets_1(soup, ['bet_1x', 'bet_12', 'bet_x2'])
+            dict_bets = bets_1(soup, ['bet_1x', 'bet_12', 'bet_x2'])
+            merge_into_df(df, _idx, dict_bets)
         except:
-            logger.exception(f"Exception_3 occurred when filling match bets double chance for id: {id};{url}")
+            logger.exception(f"Exception_3 occurred when filling match bets double chance for id: {match_id};{url}")
 
 
 
-        url = f'https://www.flashscore.pl/mecz/{id}/#/zestawienie-kursow/handicap-azjat/koniec-meczu'
+        url = f'https://www.flashscore.pl/mecz/{match_id}/#/zestawienie-kursow/handicap-azjat/koniec-meczu'
         try:
             soup = get_soup(driver, url)
             new_dict = handicap(soup)
-
+            merge_into_df(df, _idx, new_dict)
         except Exception as e:
-            logger.exception(f"Exception_4 occurred when filling match bets handicap for id: {id}; {url}. Error: {e}")
+            logger.exception(f"Exception_4 occurred when filling match bets handicap for id: {match_id}; {url}. Error: {e}")
         
         
-        url = f'https://www.flashscore.pl/mecz/{id}/#/zestawienie-kursow/powyzej-ponizej/koniec-meczu'
+        url = f'https://www.flashscore.pl/mecz/{match_id}/#/zestawienie-kursow/powyzej-ponizej/koniec-meczu'
         try:
             soup = get_soup(driver, url)
-            
+            dict_ou = bets_below_above(soup)
+            merge_into_df(df, _idx, dict_ou)
 
 
         except Exception as e:
-            logger.exception(f"Exception_5 occurred when filling match bets above and below for id: {id}; {url}. Error: {e}")
+            logger.exception(f"Exception_5 occurred when filling match bets above and below for id: {match_id}; {url}. Error: {e}")
 
-        if _idx % 50 == 0:
+        if ids.index(match_id) % 50 == 0:
             driver.quit()
             driver = webdriver.Chrome(options=chrome_options)
             driver.set_page_load_timeout(2)
             
-        df.to_csv(output_file_path)
+        df.to_csv(output_file_path, index=False)
         # defragmentation_iter += 1
         # if defragmentation_iter >= DEFRAGMENTATION_BATCH_SIZE:
         #     df = df.copy()
