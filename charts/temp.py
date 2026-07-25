@@ -9,17 +9,15 @@ images = images[:6]
 
 imgs = [Image.open(os.path.join(folder_path, img)) for img in images]
 
-# zakładamy grid 3x2
 cols = 2
 rows = 3
 
-# rozmiar bazowy (dopasowany do pierwszego obrazka)
 w, h = imgs[0].size
 
 canvas = Image.new('RGB', (cols * w, rows * h), (255, 255, 255))
 
 for idx, img in enumerate(imgs):
-    img = img.resize((w, h))  # spójny rozmiar
+    img = img.resize((w, h))
     
     x = (idx % cols) * w
     y = (idx // cols) * h
